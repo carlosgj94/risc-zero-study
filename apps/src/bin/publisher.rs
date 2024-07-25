@@ -25,12 +25,7 @@ use methods::VOTE_ELF;
 use risc0_ethereum_contracts::groth16;
 use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
 
-// `IEvenNumber` interface automatically generated via the alloy `sol!` macro.
 sol! {
-    interface IEvenNumber {
-        function set(uint256 x, bytes calldata seal);
-    }
-
     interface IRiscVotingPlugin {
         function vote(
             bytes calldata journalData,
