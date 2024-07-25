@@ -18,10 +18,9 @@
 
 use alloy_primitives::U256;
 use alloy_sol_types::{sol, SolInterface, SolValue};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Parser;
-use ethers::prelude::*;
-use methods::IS_EVEN_ELF;
+use ethers::{abi::AbiEncode, prelude::*};
 use methods::VOTE_ELF;
 use risc0_ethereum_contracts::groth16;
 use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
@@ -30,6 +29,13 @@ use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
 sol! {
     interface IEvenNumber {
         function set(uint256 x, bytes calldata seal);
+    }
+
+    interface IRiscVotingPlugin {
+        function vote(
+            bytes calldata journalData,
+            bytes calldata seal
+        );
     }
 }
 
@@ -95,8 +101,27 @@ struct Args {
     contract: String,
 
     /// The input to provide to the guest binary
-    #[clap(short, long)]
-    input: U256,
+
+    #[clap(long)]
+    signature: String,
+
+    #[clap(long)]
+    voter: String,
+
+    #[clap(long)]
+    dao: String,
+
+    #[clap(long)]
+    proposal_id: String,
+
+    #[clap(short)]
+    direction: u8,
+
+    #[clap(long)]
+    balance: U256,
+
+    #[clap(long)]
+    token_contract: String,
 }
 
 fn main() -> Result<()> {
@@ -114,15 +139,29 @@ fn main() -> Result<()> {
 
     // ABI encode input: Before sending the proof request to the Bonsai proving service,
     // the input number is ABI-encoded to match the format expected by the guest code running in the zkVM.
-    let input = args.input.abi_encode();
+    let signature = args.signature.abi_encode();
+    let voter = args.voter.abi_encode();
+    let dao = args.dao.abi_encode();
+    let proposal_id = args.proposal_id.abi_encode();
+    let direction = args.direction.encode();
+    let balance = args.balance.abi_encode();
+    let token_contract = args.token_contract.abi_encode();
 
-    let env = ExecutorEnv::builder().write_slice(&input).build()?;
+    let env = ExecutorEnv::builder()
+        .write_slice(&signature)
+        .write_slice(&voter)
+        .write_slice(&dao)
+        .write_slice(&proposal_id)
+        .write_slice(&direction)
+        .write_slice(&balance)
+        .write_slice(&token_contract)
+        .build()?;
 
     let receipt = default_prover()
         .prove_with_ctx(
             env,
             &VerifierContext::default(),
-            IS_EVEN_ELF,
+            VOTE_ELF,
             &ProverOpts::groth16(),
         )?
         .receipt;
@@ -136,13 +175,14 @@ fn main() -> Result<()> {
     // Decode Journal: Upon receiving the proof, the application decodes the journal to extract
     // the verified number. This ensures that the number being submitted to the blockchain matches
     // the number that was verified off-chain.
-    let x = U256::abi_decode(&journal, true).context("decoding journal data")?;
+    // TODO: Replace with the correct checks; this is just a placeholder
+    // let x = U256::abi_decode(&journal, true).context("decoding journal data")?;
 
     // Construct function call: Using the IEvenNumber interface, the application constructs
     // the ABI-encoded function call for the set function of the EvenNumber contract.
     // This call includes the verified number, the post-state digest, and the seal (proof).
-    let calldata = IEvenNumber::IEvenNumberCalls::set(IEvenNumber::setCall {
-        x,
+    let calldata = IRiscVotingPlugin::IRiscVotingPluginCalls::vote(IRiscVotingPlugin::voteCall {
+        journalData: journal,
         seal: seal.into(),
     })
     .abi_encode();
