@@ -22,6 +22,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use ethers::prelude::*;
 use methods::IS_EVEN_ELF;
+use methods::VOTE_ELF;
 use risc0_ethereum_contracts::groth16;
 use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
 
