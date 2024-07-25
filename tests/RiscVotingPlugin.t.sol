@@ -29,6 +29,7 @@ contract RiscVotingPluginTest is RiscZeroCheats, Test {
     Token_ERC20 public token;
     address public alice;
     uint256 public alicePk;
+    address public dao;
 
     function setUp() public {
         (address alice, uint256 alicePk) = makeAddrAndKey("alice");
@@ -49,26 +50,15 @@ contract RiscVotingPluginTest is RiscZeroCheats, Test {
         bytes32 voteHash = keccak256("Signed by Alice");
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, voteHash);
         bytes memory signature = abi.encodePacked(r, s, v);
+        address alice_address = ecrecover(voteHash, v, r, s);
 
+        // TODO: Check on the inputs of the prove
         (bytes memory journal, bytes memory seal) = prove(
-          Elf.VOTE_PATH,
-
+            Elf.VOTE_PATH,
+            abi.encode(signature, alice_address, dao, 0, 1, 0, token)
         );
 
-        votingPlugin.vote(direction, balance, seal, signature);
+        votingPlugin.vote(journal, seal);
         assertEq(votingPlugin.get(), direction);
     }
-
-    /*
-    function test_SetZero() public {
-        uint256 number = 0;
-        (bytes memory journal, bytes memory seal) = prove(
-            Elf.IS_EVEN_PATH,
-            abi.encode(number)
-        );
-
-        votingPlugin.set(abi.decode(journal, (uint256)), seal);
-        assertEq(votingPlugin.get(), number);
-    }
-    */
 }

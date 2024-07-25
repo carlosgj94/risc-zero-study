@@ -107,7 +107,7 @@ struct Args {
     dao: String,
 
     #[clap(long)]
-    proposal_id: String,
+    proposal_id: U256,
 
     #[clap(short)]
     direction: u8,
