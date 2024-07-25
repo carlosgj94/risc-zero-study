@@ -136,6 +136,7 @@ fn main() {
 
     // Commit the block hash and number used when deriving `view_call_env` to the journal.
     // The portion of the receipt that contains the public outputs of a zkVM application.
+    // Here we could aggregate multiple commitments, but for now we only have one.
     let journal = Steel::Journal {
         commitment: env.block_commitment(),
         tokenAddress: token_contract,

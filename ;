@@ -50,8 +50,6 @@ contract RiscVotingPlugin {
 
         // Ensure the data provided in the Journal is actually valid
         require(journal.token == token, "Invalid token");
-        require(journal.proposalId == proposalId, "Invalid proposalId");
-        require(journal.dao == dao, "Invalid DAO");
 
         // Validating the jounral data
         require(
@@ -61,10 +59,10 @@ contract RiscVotingPlugin {
 
         // Verify the proof
         bytes32 journalHash = sha256(journalData);
-        verifier.verify(seal, imageId, journalHash);
+        verofier.verify(_seal, imageId, journalHash);
 
         // Execute whatever
-        proposalId = journal.direction;
+        proposalId = _direction;
     }
 
     /// @notice Returns the number stored.
