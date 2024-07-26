@@ -44,20 +44,27 @@ contract RiscVotingPluginTest is RiscZeroCheats, Test {
     }
 
     function test_Vote() public {
-        uint8 direction = 1;
-        uint256 balance = 1 ether;
+        bytes32 votingDataHash = keccak256(
+            abi.encode(block.chainid, dao, 0, 1, 1 ether)
+        );
 
-        bytes32 voteHash = keccak256("Signed by Alice");
+        bytes memory prefixedMessage = abi.encodePacked(
+            "\x19Ethereum Signed Message:\n32",
+            votingDataHash
+        );
+
+        bytes32 voteHash = keccak256(prefixedMessage);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePk, voteHash);
         bytes memory signature = abi.encodePacked(r, s, v);
 
         // TODO: Check on the inputs of the prove
+        // Probably I need sending the rpc params?
         (bytes memory journal, bytes memory seal) = prove(
             Elf.VOTE_PATH,
-            abi.encode(signature, alice, dao, 0, 1, balance, token)
+            abi.encode(signature, alice, dao, 0, 1, 1 ether, token)
         );
 
         votingPlugin.vote(journal, seal);
-        assertEq(votingPlugin.get(), direction);
+        assertEq(votingPlugin.get(), 1);
     }
 }
